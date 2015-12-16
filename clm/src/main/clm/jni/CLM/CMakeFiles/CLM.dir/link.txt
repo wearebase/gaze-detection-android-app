@@ -1,0 +1,2 @@
+/usr/bin/ar cr libCLM.a  CMakeFiles/CLM.dir/src/CCNF_patch_expert.cpp.o CMakeFiles/CLM.dir/src/CLM.cpp.o CMakeFiles/CLM.dir/src/CLM_utils.cpp.o CMakeFiles/CLM.dir/src/CLMTracker.cpp.o CMakeFiles/CLM.dir/src/DetectionValidator.cpp.o CMakeFiles/CLM.dir/src/Patch_experts.cpp.o CMakeFiles/CLM.dir/src/PAW.cpp.o CMakeFiles/CLM.dir/src/PDM.cpp.o CMakeFiles/CLM.dir/src/SVR_patch_expert.cpp.o CMakeFiles/CLM.dir/src/stdafx.cpp.o
+/usr/bin/ranlib libCLM.a
