@@ -1,14 +1,12 @@
-## dlib-android-app
+## dlib-android-app + CLM-framework
 
+This repo is an attempt to integrate [CLM-framework](https://github.com/TadasBaltrusaitis/CLM-framework) into [dlib-android-app](https://github.com/tzutalin/dlib-android-app).
 
-See http://dlib.net for the main project documentation.
-
-See [dlib-android](https://github.com/tzutalin/dlib-android) for JNI lib. Refer to dlib-android/jni/jnilib_ex
-
+This version requires [CrystaX NDK](https://www.crystax.net) since depends on boost library.
 
 ###Grap the source
 
-`$ git clone https://github.com/tzutalin/dlib-android-app`
+`$ git clone https://github.com/DraXus/dlib-android-app`
 
 `$ git submodule update --init --recursive`
 
