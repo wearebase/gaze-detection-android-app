@@ -14,15 +14,15 @@ LOCAL_MODULE := FaceAnalyser
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../CLM/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../../../../dlib/src/main/dlib/jni/dlib
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../boost/armv7a/include
 
 FILE_LIST := $(wildcard $(LOCAL_PATH)/src/*.cpp)
 LOCAL_SRC_FILES := $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
-LOCAL_STATIC_LIBRARIES += boost_serialization_static boost_filesystem dlib
+LOCAL_STATIC_LIBRARIES += boost_serialization_static boost_filesystem_static
+LOCAL_STATIC_LIBRARIES += dlib
 
 LOCAL_CPPFLAGS += -fexceptions -frtti -std=c++11
 LOCAL_CFLAGS  += -pie -fPIE
 
 include $(BUILD_STATIC_LIBRARY)
-
-$(call import-module,boost/1.59.0)
