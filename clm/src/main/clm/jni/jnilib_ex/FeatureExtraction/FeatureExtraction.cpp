@@ -82,6 +82,24 @@ std::cout << "Warning: " << stream << std::endl
 #define ERROR_STREAM( stream ) \
 std::cout << "Error: " << stream << std::endl
 
+double string_to_double( const std::string& s )
+{
+	std::istringstream i(s);
+	double x;
+	if (!(i >> x))
+		return 0;
+	return x;
+}
+
+double string_to_int( const std::string& s )
+{
+	std::istringstream i(s);
+	int x;
+	if (!(i >> x))
+		return 0;
+	return x;
+}
+
 static void printErrorAndAbort( const std::string & error )
 {
     std::cout << error << std::endl;
@@ -252,14 +270,14 @@ void get_output_feature_params(vector<string> &output_similarity_aligned, bool &
 		}
 		else if (arguments[i].compare("-simscale") == 0) 
 		{                    
-			similarity_scale = stod(arguments[i + 1]);
+			similarity_scale = string_to_double(arguments[i + 1]);
 			valid[i] = false;
 			valid[i+1] = false;			
 			i++;
 		}		
 		else if (arguments[i].compare("-simsize") == 0) 
 		{                    
-			similarity_size = stoi(arguments[i + 1]);
+			similarity_size = string_to_int(arguments[i + 1]);
 			valid[i] = false;
 			valid[i+1] = false;			
 			i++;
