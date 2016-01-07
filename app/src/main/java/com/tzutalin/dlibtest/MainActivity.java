@@ -5,7 +5,9 @@
 package com.tzutalin.dlibtest;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -33,7 +35,13 @@ import com.dexafree.materialList.card.provider.BigImageCardProvider;
 import com.dexafree.materialList.view.MaterialListView;
 import com.tzutalin.dlib.PeopleDet;
 import com.tzutalin.dlib.VisionDetRet;
+import org.draxus.clm.GazeDetection;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +58,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Copy assets to internal folder in order to run FeatureExtraction
+        try {
+            File nativeFolder = getApplicationContext().getDir("nativeFolder", Context.MODE_PRIVATE);
+
+            File archFolder = new File(nativeFolder, "armeabi-v7a");
+            copyDirorfileFromAssetManager("armeabi-v7a", archFolder.getAbsolutePath());
+            File featureExtractionFile = new File(archFolder, "FeatureExtraction");
+            featureExtractionFile.setExecutable(true);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         setContentView(R.layout.activity_main);
         mListView = (MaterialListView) findViewById(R.id.material_listview);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -153,6 +175,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }
+
+            GazeDetection gazeDetection = new GazeDetection();
+            if (faceList.size() > 0) {
+                String output = gazeDetection.runDetection(path, getApplicationContext());
+                Log.d(TAG, output);
+            } else {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "No face", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
             return cardrets;
         }
 
@@ -251,4 +287,75 @@ public class MainActivity extends AppCompatActivity {
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bm, newWidth, newHeight, true);
         return resizedBitmap;
     }
+
+
+    private String copyDirorfileFromAssetManager(String arg_assetDir, String dest_dir_path) throws IOException
+    {
+        File dest_dir = new File(dest_dir_path);
+
+        createDir(dest_dir);
+
+        AssetManager asset_manager = getApplicationContext().getAssets();
+        String[] files = asset_manager.list(arg_assetDir);
+
+        for (int i = 0; i < files.length; i++)
+        {
+            String abs_asset_file_path = addTrailingSlash(arg_assetDir) + files[i];
+            String sub_files[] = asset_manager.list(abs_asset_file_path);
+            String dest_file_path = addTrailingSlash(dest_dir_path) + files[i];
+            if (sub_files.length == 0)
+            {
+                // It is a file
+                copyAssetFile(abs_asset_file_path, dest_file_path);
+            } else
+            {
+                // It is a sub directory
+                copyDirorfileFromAssetManager(abs_asset_file_path, dest_file_path);
+            }
+        }
+
+        return dest_dir_path;
+    }
+
+
+    private void copyAssetFile(String assetFilePath, String destinationFilePath) throws IOException
+    {
+        InputStream in = getApplicationContext().getAssets().open(assetFilePath);
+        OutputStream out = new FileOutputStream(destinationFilePath);
+
+        byte[] buf = new byte[1024];
+        int len;
+        while ((len = in.read(buf)) > 0)
+            out.write(buf, 0, len);
+        in.close();
+        out.close();
+    }
+
+    private String addTrailingSlash(String path)
+    {
+        if (path.charAt(path.length() - 1) != '/')
+        {
+            path += "/";
+        }
+        return path;
+    }
+
+    private void createDir(File dir) throws IOException
+    {
+        if (dir.exists())
+        {
+            if (!dir.isDirectory())
+            {
+                throw new IOException("Can't create directory, a file is in the way");
+            }
+        } else
+        {
+            dir.mkdirs();
+            if (!dir.isDirectory())
+            {
+                throw new IOException("Unable to create directory");
+            }
+        }
+    }
+
 }
