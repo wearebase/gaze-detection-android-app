@@ -26,5 +26,10 @@ LOCAL_STATIC_LIBRARIES += dlib
 LOCAL_CPPFLAGS += -fexceptions -frtti -std=c++11
 LOCAL_CFLAGS  += -pie -fPIE
 
+LOCAL_ARM_MODE := arm
+ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
+LOCAL_ARM_NEON := true
+endif
+
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
 include $(BUILD_STATIC_LIBRARY)
