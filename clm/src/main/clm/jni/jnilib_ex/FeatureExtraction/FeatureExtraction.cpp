@@ -2,7 +2,7 @@
 // Copyright (C) 2015, University of Cambridge,
 // all rights reserved.
 //
-// THIS SOFTWARE IS PROVIDED �AS IS� AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 // INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
 // AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
 // THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -15,13 +15,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Notwithstanding the license granted herein, Licensee acknowledges that certain components
-// of the Software may be covered by so-called �open source� software licenses (�Open Source
-// Components�), which means any software licenses approved as open source licenses by the
+// of the Software may be covered by so-called "open source" software licenses ("Open Source
+// Components"), which means any software licenses approved as open source licenses by the
 // Open Source Initiative or any substantially similar licenses, including without limitation any
 // license that, as a condition of distribution of the software licensed under such license,
 // requires that the distributor make the software available in source code format. Licensor shall
 // provide a list of Open Source Components for a particular version of the Software upon
-// Licensee�s request. Licensee will comply with the applicable terms of such licenses and to
+// Licensee's request. Licensee will comply with the applicable terms of such licenses and to
 // the extent required by the licenses covering Open Source Components, the terms of such
 // licenses will apply in lieu of the terms of this Agreement. To the extent the terms of the
 // licenses applicable to Open Source Components prohibit any of the restrictions in this
@@ -62,6 +62,8 @@
 
 #include <fstream>
 #include <sstream>
+
+#include <unistd.h>
 
 #include <opencv2/videoio/videoio.hpp>  // Video write
 #include <opencv2/videoio/videoio_c.h>  // Video write
@@ -566,8 +568,16 @@ int main (int argc, char **argv)
 			if( current_file.size() > 0 )
 			{
 				INFO_STREAM( "Attempting to read from file: " << current_file );
+				if (access(current_file.c_str(), R_OK) == 0) {
+					INFO_STREAM( "Read permission: TRUE" );
+				}
+				else {
+					INFO_STREAM( "Read permission: FALSE" );
+				}
+
 				video_capture = VideoCapture( current_file );
 				total_frames = (int)video_capture.get(CV_CAP_PROP_FRAME_COUNT);
+				INFO_STREAM( "Total frames: " << total_frames );
 			}
 			else
 			{
@@ -763,8 +773,9 @@ int main (int argc, char **argv)
 
 		INFO_STREAM( "Starting tracking");
 		while(!captured_image.empty())
-		{		
+		{
 
+			INFO_STREAM( "Begin loop" );
 			// Reading the images
 			Mat_<uchar> grayscale_image;
 
@@ -776,6 +787,8 @@ int main (int argc, char **argv)
 			{
 				grayscale_image = captured_image.clone();				
 			}
+
+			INFO_STREAM( "Detect landmarks" );
 		
 			// The actual facial landmark detection / tracking
 			bool detection_success;
@@ -788,6 +801,8 @@ int main (int argc, char **argv)
 			{
 				detection_success = CLMTracker::DetectLandmarksInImage(grayscale_image, clm_model, clm_parameters);
 			}
+
+			INFO_STREAM( "Estimate gaze" );
 
 			// Gaze tracking, absolute gaze direction
 			Point3f gazeDirection0;
@@ -802,6 +817,8 @@ int main (int argc, char **argv)
 				FaceAnalysis::EstimateGaze(clm_model, gazeDirection0, gazeDirection0_head, fx, fy, cx, cy, true);
 				FaceAnalysis::EstimateGaze(clm_model, gazeDirection1, gazeDirection1_head, fx, fy, cx, cy, false);
 			}
+
+			INFO_STREAM( "Face alignment" );
 
 			// Do face alignment
 			Mat sim_warped_img;			
@@ -831,6 +848,8 @@ int main (int argc, char **argv)
 				}
 			}
 
+			INFO_STREAM( "Pose estimation" );
+
 			// Work out the pose of the head from the tracked model
 			Vec6d pose_estimate_CLM;
 			if(use_camera_plane_pose)
@@ -842,12 +861,14 @@ int main (int argc, char **argv)
 				pose_estimate_CLM = CLMTracker::GetCorrectedPoseCamera(clm_model, fx, fy, cx, cy);
 			}
 
-
+			INFO_STREAM( "Output HOG frame" );
 
 			if(hog_output_file.is_open())
 			{
 				output_HOG_frame(&hog_output_file, detection_success, hog_descriptor, num_hog_rows, num_hog_cols);
 			}
+
+			INFO_STREAM( "Output similarity" );
 
 			// Write the similarity normalised output
 			if(!output_similarity_align.empty())
@@ -875,6 +896,8 @@ int main (int argc, char **argv)
 					imwrite(out_file, sim_warped_img);
 				}
 			}
+
+			INFO_STREAM( "Visualising the results" );
 			// Visualising the results
 			// Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
 			double detection_certainty = clm_model.detection_certainty;
@@ -908,6 +931,8 @@ int main (int argc, char **argv)
 					FaceAnalysis::DrawGaze(captured_image, clm_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 				}
 			}
+
+			INFO_STREAM( "Work out the framerate" );
 			
 			// Work out the framerate
 			if(frame_count % 10 == 0)
@@ -930,6 +955,8 @@ int main (int argc, char **argv)
 				imshow("tracking_result", captured_image);
 			}
 
+			INFO_STREAM( "Output the detected facial landmarks" );
+
 			// Output the detected facial landmarks
 			if(!landmark_output_files.empty())
 			{
@@ -940,6 +967,8 @@ int main (int argc, char **argv)
 				}
 				landmarks_output_file << endl;
 			}
+
+			INFO_STREAM( "Output the detected facial 3D landmarks" );
 			
 			// Output the detected facial landmarks
 			if(!landmark_3D_output_files.empty())
@@ -952,6 +981,8 @@ int main (int argc, char **argv)
 				}
 				landmarks_3D_output_file << endl;
 			}
+
+			INFO_STREAM( "Output params" );
 
 			if(!params_output_files.empty())
 			{
@@ -967,6 +998,8 @@ int main (int argc, char **argv)
 				params_output_file << endl;
 			}
 
+			INFO_STREAM( "Output pose" );
+
 			// Output the estimated head pose
 			if(!pose_output_files.empty())
 			{
@@ -974,8 +1007,10 @@ int main (int argc, char **argv)
 				pose_output_file << frame_count + 1 << ", " << confidence << ", " << detection_success
 					<< ", " << pose_estimate_CLM[0] << ", " << pose_estimate_CLM[1] << ", " << pose_estimate_CLM[2]
 				    << ", " << pose_estimate_CLM[3] << ", " << pose_estimate_CLM[4] << ", " << pose_estimate_CLM[5] << endl;
-			}				
-						
+			}
+
+			INFO_STREAM( "Output gaze" );
+
 			// Output the estimated head pose
 			if (!gaze_output_files.empty())
 			{
@@ -1021,6 +1056,7 @@ int main (int argc, char **argv)
 				}
 			}
 
+			INFO_STREAM( "Output AU" );
 
 			if(!output_au_files.empty())
 			{
@@ -1059,6 +1095,8 @@ int main (int argc, char **argv)
 				au_output_file << endl;
 			}
 
+			INFO_STREAM( "Output tracked videos" );
+
 			// output the tracked video
 			if(!tracked_videos_output.empty())
 			{		
@@ -1081,19 +1119,6 @@ int main (int argc, char **argv)
 				{
 					captured_image = Mat();
 				}
-			}
-			// detect key presses
-			char character_press = cv::waitKey(1);
-			
-			// restart the tracker
-			if(character_press == 'r')
-			{
-				clm_model.Reset();
-			}
-			// quit the application
-			else if(character_press=='q')
-			{
-				return(0);
 			}
 
 			// Update the frame count
