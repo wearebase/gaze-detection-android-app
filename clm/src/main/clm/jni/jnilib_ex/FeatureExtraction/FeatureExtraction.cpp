@@ -60,6 +60,10 @@
 // FeatureExtraction.cpp : Defines the entry point for the feature extraction console application.
 #include "CLM_core.h"
 
+#include <string.h>
+#include <jni.h>
+#include <android/log.h>
+
 #include <fstream>
 #include <sstream>
 
@@ -75,8 +79,12 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#define INFO_STREAM( stream ) \
-std::cout << stream << std::endl
+#define LOG_TAG "FeatureExtraction-JNI"
+#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 #define WARN_STREAM( stream ) \
 std::cout << "Warning: " << stream << std::endl
@@ -404,6 +412,87 @@ void output_HOG_frame(std::ofstream* hog_file, bool good_frame, const Mat_<doubl
 		}
 	}
 }
+
+//-------------------------------------------------
+// JNI CODE
+//-------------------------------------------------
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+jint JNIEXPORT JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+	LOGE("JNI On Load");
+	JNIEnv* env = NULL;
+	jint result = -1;
+
+	if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+		LOGE("GetEnv failed!");
+		return result;
+	}
+
+	return JNI_VERSION_1_6;
+}
+
+void JNIEXPORT JNICALL
+Java_org_draxus_clm_GazeDetection_jniNativeClassInit(JNIEnv* _env, jclass _this)
+{
+	jclass detRetClass = _env->FindClass("org/draxus/clm/GazeDetection");
+	LOGD("JniNativeClassIni Success");
+}
+
+jint JNIEXPORT JNICALL
+Java_org_draxus_clm_GazeDetection_jniGazeDet(
+		JNIEnv* env, jobject cls)
+{
+	LOGD("Java_org_draxus_clm_GazeDetection_jniGazeDet");
+}
+
+jstring
+Java_org_draxus_clm_GazeDetection_stringFromJNI(JNIEnv* env, jobject thiz)
+{
+#if defined(__arm__)
+	#if defined(__ARM_ARCH_7A__)
+        #if defined(__ARM_NEON__)
+          #if defined(__ARM_PCS_VFP)
+            #define ABI "armeabi-v7a/NEON (hard-float)"
+          #else
+            #define ABI "armeabi-v7a/NEON"
+          #endif
+        #else
+          #if defined(__ARM_PCS_VFP)
+            #define ABI "armeabi-v7a (hard-float)"
+          #else
+            #define ABI "armeabi-v7a"
+          #endif
+        #endif
+      #else
+       #define ABI "armeabi"
+      #endif
+#elif defined(__i386__)
+	#define ABI "x86"
+#elif defined(__x86_64__)
+	#define ABI "x86_64"
+#elif defined(__mips64)  /* mips64el-* toolchain defines __mips__ too */
+	#define ABI "mips64"
+#elif defined(__mips__)
+	#define ABI "mips"
+#elif defined(__aarch64__)
+#define ABI "arm64-v8a"
+#else
+	#define ABI "unknown"
+#endif
+
+	return env->NewStringUTF(ABI);
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+//-------------------------------------------------
+// JNI CODE ENDS
+//-------------------------------------------------
 
 int main (int argc, char **argv)
 {
