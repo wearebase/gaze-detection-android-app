@@ -50,7 +50,7 @@
 //       Facial Expression Recognition and Analysis Challenge 2015,
 //       IEEE International Conference on Automatic Face and Gesture Recognition, 2015
 //
-//       Erroll Wood, Tadas Baltru�aitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
+//       Erroll Wood, Tadas Baltrusaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
 //		 Rendering of Eyes for Eye-Shape Registration and Gaze Estimation
 //       in IEEE International. Conference on Computer Vision (ICCV), 2015
 //
@@ -85,12 +85,6 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-
-#define WARN_STREAM( stream ) \
-std::cout << "Warning: " << stream << std::endl
-
-#define ERROR_STREAM( stream ) \
-std::cout << "Error: " << stream << std::endl
 
 double string_to_double( const std::string& s )
 {
@@ -441,11 +435,75 @@ Java_org_draxus_clm_GazeDetection_jniNativeClassInit(JNIEnv* _env, jclass _this)
 	LOGD("JniNativeClassIni Success");
 }
 
-jint JNIEXPORT JNICALL
-Java_org_draxus_clm_GazeDetection_jniGazeDet(
-		JNIEnv* env, jobject cls)
+jstring JNIEXPORT JNICALL
+Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong captured_image_address, jstring modelFolder)
 {
 	LOGD("Java_org_draxus_clm_GazeDetection_jniGazeDet");
+	// cx and cy aren't necessarily in the image center, so need to be able to override it (start with unit vals and init them if none specified)
+	float fx = 500, fy = 500, cx = 0, cy = 0;
+
+	const char *nativeModelFolder = env->GetStringUTFChars(modelFolder, JNI_FALSE);
+	LOGD("model folder = %s", nativeModelFolder);
+
+	LOGD("Initialize CLM parameters");
+	CLMTracker::CLMParameters clm_parameters;
+	clm_parameters.track_gaze = true;
+	clm_parameters.quiet_mode = true;
+	clm_parameters.model_location = nativeModelFolder;
+
+	LOGD("Initialize CLM model");
+	CLMTracker::CLM clm_model(clm_parameters.model_location);
+
+	Mat* captured_image = (Mat*)captured_image_address;
+
+	int rows = captured_image->rows;
+	int cols = captured_image->cols;
+	LOGD("Image size: %d x %d", rows, cols);
+
+	LOGD("Cloning image");
+	Mat_<uchar> grayscale_image = captured_image->clone();
+
+	LOGD("Detecting landmarks");
+	bool detection_success = CLMTracker::DetectLandmarksInImage(grayscale_image, clm_model, clm_parameters);
+	if (detection_success) {
+		LOGD("Detection SUCCESS");
+	}
+	else {
+		LOGD("Detection FAILED");
+		return env->NewStringUTF("Detection FAILED");
+	}
+
+	// Gaze tracking, absolute gaze direction
+	Point3f gazeDirection0;
+	Point3f gazeDirection1;
+
+	// Gaze with respect to head rather than camera (for example if eyes are rolled up and the head is tilted or turned this will be stable)
+	Point3f gazeDirection0_head;
+	Point3f gazeDirection1_head;
+
+	// If cx (optical axis centre) is undefined will use the image size/2 as an estimate
+	if(cx == 0 || cy == 0)
+	{
+		cx = cols / 2.0f;
+		cy = rows / 2.0f;
+	}
+
+	LOGD("Estimating Gaze");
+	FaceAnalysis::EstimateGaze(clm_model, gazeDirection0, gazeDirection0_head, fx, fy, cx, cy, true);
+	FaceAnalysis::EstimateGaze(clm_model, gazeDirection1, gazeDirection1_head, fx, fy, cx, cy, false);
+
+	LOGD("Returning result");
+
+	char gazeEstimation[256];
+	sprintf(gazeEstimation, "Detection SUCCESS: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f,",
+			gazeDirection0.x, gazeDirection0.y, gazeDirection0.z,
+			gazeDirection1.x, gazeDirection1.y, gazeDirection1.z,
+			gazeDirection0_head.x, gazeDirection0_head.y, gazeDirection0_head.z,
+			gazeDirection1_head.x, gazeDirection1_head.y, gazeDirection1_head.z
+	);
+
+	return env->NewStringUTF(gazeEstimation);
+
 }
 
 jstring
@@ -501,9 +559,9 @@ int main (int argc, char **argv)
 
 	// Some initial parameters that can be overriden from command line	
 	vector<string> files, depth_directories, pose_output_files, tracked_videos_output, landmark_output_files, landmark_3D_output_files;
-	
-	// By default try webcam 0
+
 	int device = 0;
+	// By default try webcam 0
 
 	// cx and cy aren't necessarilly in the image center, so need to be able to override it (start with unit vals and init them if none specified)
     float fx = 500, fy = 500, cx = 0, cy = 0;
@@ -656,21 +714,21 @@ int main (int argc, char **argv)
 			// Do some grabbing
 			if( current_file.size() > 0 )
 			{
-				INFO_STREAM( "Attempting to read from file: " << current_file );
+				LOGD("Attempting to read from file: %s", current_file.c_str());
 				if (access(current_file.c_str(), R_OK) == 0) {
-					INFO_STREAM( "Read permission: TRUE" );
+					LOGD("Read permission: TRUE");
 				}
 				else {
-					INFO_STREAM( "Read permission: FALSE" );
+					LOGD("Read permission: FALSE");
 				}
 
 				video_capture = VideoCapture( current_file );
 				total_frames = (int)video_capture.get(CV_CAP_PROP_FRAME_COUNT);
-				INFO_STREAM( "Total frames: " << total_frames );
+				LOGD("Total frames: %d", total_frames);
 			}
 			else
 			{
-				INFO_STREAM( "Attempting to capture from device: " << device );
+				LOGD("Attempting to capture from device: %d", device);
 				video_capture = VideoCapture( device );
 				webcam = true;
 
@@ -680,7 +738,7 @@ int main (int argc, char **argv)
 			}
 
 			if( !video_capture.isOpened() ) FATAL_STREAM( "Failed to open video source" );
-			else INFO_STREAM( "Device or file opened");
+			else LOGD("Device or file opened");
 
 			video_capture >> captured_image;	
 		}
@@ -860,11 +918,11 @@ int main (int argc, char **argv)
 		double fps = 10;		
 		bool visualise_hog = verbose;
 
-		INFO_STREAM( "Starting tracking");
+		LOGD("Starting tracking");
 		while(!captured_image.empty())
 		{
 
-			INFO_STREAM( "Begin loop" );
+			LOGD("Begin loop");
 			// Reading the images
 			Mat_<uchar> grayscale_image;
 
@@ -877,7 +935,7 @@ int main (int argc, char **argv)
 				grayscale_image = captured_image.clone();				
 			}
 
-			INFO_STREAM( "Detect landmarks" );
+			LOGD("Detect landmarks");
 		
 			// The actual facial landmark detection / tracking
 			bool detection_success;
@@ -891,7 +949,7 @@ int main (int argc, char **argv)
 				detection_success = CLMTracker::DetectLandmarksInImage(grayscale_image, clm_model, clm_parameters);
 			}
 
-			INFO_STREAM( "Estimate gaze" );
+			LOGD("Estimate gaze");
 
 			// Gaze tracking, absolute gaze direction
 			Point3f gazeDirection0;
@@ -907,7 +965,7 @@ int main (int argc, char **argv)
 				FaceAnalysis::EstimateGaze(clm_model, gazeDirection1, gazeDirection1_head, fx, fy, cx, cy, false);
 			}
 
-			INFO_STREAM( "Face alignment" );
+			LOGD("Face alignment");
 
 			// Do face alignment
 			Mat sim_warped_img;			
@@ -937,7 +995,7 @@ int main (int argc, char **argv)
 				}
 			}
 
-			INFO_STREAM( "Pose estimation" );
+			LOGD("Pose estimation");
 
 			// Work out the pose of the head from the tracked model
 			Vec6d pose_estimate_CLM;
@@ -950,14 +1008,14 @@ int main (int argc, char **argv)
 				pose_estimate_CLM = CLMTracker::GetCorrectedPoseCamera(clm_model, fx, fy, cx, cy);
 			}
 
-			INFO_STREAM( "Output HOG frame" );
+			LOGD("Output HOG frame");
 
 			if(hog_output_file.is_open())
 			{
 				output_HOG_frame(&hog_output_file, detection_success, hog_descriptor, num_hog_rows, num_hog_cols);
 			}
 
-			INFO_STREAM( "Output similarity" );
+			LOGD("Output similarity");
 
 			// Write the similarity normalised output
 			if(!output_similarity_align.empty())
@@ -986,7 +1044,7 @@ int main (int argc, char **argv)
 				}
 			}
 
-			INFO_STREAM( "Visualising the results" );
+			LOGD("Visualising the results");
 			// Visualising the results
 			// Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
 			double detection_certainty = clm_model.detection_certainty;
@@ -1021,7 +1079,7 @@ int main (int argc, char **argv)
 				}
 			}
 
-			INFO_STREAM( "Work out the framerate" );
+			LOGD("Work out the framerate");
 			
 			// Work out the framerate
 			if(frame_count % 10 == 0)
@@ -1044,7 +1102,7 @@ int main (int argc, char **argv)
 				imshow("tracking_result", captured_image);
 			}
 
-			INFO_STREAM( "Output the detected facial landmarks" );
+			LOGD("Output the detected facial landmarks");
 
 			// Output the detected facial landmarks
 			if(!landmark_output_files.empty())
@@ -1057,7 +1115,7 @@ int main (int argc, char **argv)
 				landmarks_output_file << endl;
 			}
 
-			INFO_STREAM( "Output the detected facial 3D landmarks" );
+			LOGD("Output the detected facial 3D landmarks");
 			
 			// Output the detected facial landmarks
 			if(!landmark_3D_output_files.empty())
@@ -1071,7 +1129,7 @@ int main (int argc, char **argv)
 				landmarks_3D_output_file << endl;
 			}
 
-			INFO_STREAM( "Output params" );
+			LOGD("Output params");
 
 			if(!params_output_files.empty())
 			{
@@ -1087,7 +1145,7 @@ int main (int argc, char **argv)
 				params_output_file << endl;
 			}
 
-			INFO_STREAM( "Output pose" );
+			LOGD("Output pose");
 
 			// Output the estimated head pose
 			if(!pose_output_files.empty())
@@ -1098,7 +1156,7 @@ int main (int argc, char **argv)
 				    << ", " << pose_estimate_CLM[3] << ", " << pose_estimate_CLM[4] << ", " << pose_estimate_CLM[5] << endl;
 			}
 
-			INFO_STREAM( "Output gaze" );
+			LOGD("Output gaze");
 
 			// Output the estimated head pose
 			if (!gaze_output_files.empty())
@@ -1145,7 +1203,7 @@ int main (int argc, char **argv)
 				}
 			}
 
-			INFO_STREAM( "Output AU" );
+			LOGD("Output AU");
 
 			if(!output_au_files.empty())
 			{
@@ -1184,7 +1242,7 @@ int main (int argc, char **argv)
 				au_output_file << endl;
 			}
 
-			INFO_STREAM( "Output tracked videos" );
+			LOGD("Output tracked videos");
 
 			// output the tracked video
 			if(!tracked_videos_output.empty())
