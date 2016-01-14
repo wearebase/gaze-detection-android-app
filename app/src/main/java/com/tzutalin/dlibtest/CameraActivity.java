@@ -1,12 +1,10 @@
 package com.tzutalin.dlibtest;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.res.AssetManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
@@ -19,14 +17,8 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 public class CameraActivity extends Activity implements CvCameraViewListener2 {
-    private static final String TAG = "OCVSample::Activity";
+    private static final String TAG = CameraActivity.class.getName();
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -49,18 +41,12 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
         }
     };
 
-    public CameraActivity() {
-        Log.i(TAG, "Instantiated new " + this.getClass());
-    }
-
-    /**
-     * Called when the activity is first created.
-     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        //Log.d(TAG, Build.CPU_ABI);
 
         gazeDetector = new GazeDetection(Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt");
 
