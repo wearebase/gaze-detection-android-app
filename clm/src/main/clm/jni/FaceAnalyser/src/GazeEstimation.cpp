@@ -1,7 +1,7 @@
 // Copyright (C) 2015, University of Cambridge,
 // all rights reserved.
 //
-// THIS SOFTWARE IS PROVIDED “AS IS” FOR ACADEMIC USE ONLY AND ANY EXPRESS
+// THIS SOFTWARE IS PROVIDED ï¿½AS ISï¿½ FOR ACADEMIC USE ONLY AND ANY EXPRESS
 // OR IMPLIED WARRANTIES WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
@@ -14,13 +14,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Notwithstanding the license granted herein, Licensee acknowledges that certain components
-// of the Software may be covered by so-called “open source” software licenses (“Open Source
-// Components”), which means any software licenses approved as open source licenses by the
+// of the Software may be covered by so-called ï¿½open sourceï¿½ software licenses (ï¿½Open Source
+// Componentsï¿½), which means any software licenses approved as open source licenses by the
 // Open Source Initiative or any substantially similar licenses, including without limitation any
 // license that, as a condition of distribution of the software licensed under such license,
 // requires that the distributor make the software available in source code format. Licensor shall
 // provide a list of Open Source Components for a particular version of the Software upon
-// Licensee’s request. Licensee will comply with the applicable terms of such licenses and to
+// Licenseeï¿½s request. Licensee will comply with the applicable terms of such licenses and to
 // the extent required by the licenses covering Open Source Components, the terms of such
 // licenses will apply in lieu of the terms of this Agreement. To the extent the terms of the
 // licenses applicable to Open Source Components prohibit any of the restrictions in this
@@ -36,7 +36,7 @@
 //       not limited to academic journal and conference publications, technical
 //       reports and manuals, must cite one of the following works:
 //
-//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
+//       Erroll Wood, Tadas Baltruï¿½aitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
 //		 Rendering of Eyes for Eye-Shape Registration and Gaze Estimation
 //       in IEEE International. Conference on Computer Vision (ICCV), 2015
 //
@@ -49,6 +49,15 @@
 #include <iostream>
 
 #include "GazeEstimation.h"
+
+#include <android/log.h>
+
+#define LOG_TAG "CLMTracker-JNI"
+#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) //__android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 using namespace cv;
 using namespace std;
@@ -91,9 +100,15 @@ Point3f GetPupilPosition(Mat_<double> eyeLdmks3d){
 
 void FaceAnalysis::EstimateGaze(const CLMTracker::CLM& clm_model, Point3f& gaze_absolute, Point3f& gaze_head, float fx, float fy, float cx, float cy, bool left_eye)
 {
+	LOGD("FaceAnalysis::EstimateGaze");
+	LOGD("GetPoseCamera");
 	Vec6d headPose = CLMTracker::GetPoseCamera(clm_model, fx, fy, cx, cy);
+	LOGD("eulerAngles");
 	Vec3d eulerAngles(headPose(3), headPose(4), headPose(5));
+	LOGD("rotMat");
 	Matx33d rotMat = CLMTracker::Euler2RotationMatrix(eulerAngles);
+
+	LOGD("loop (size = %d)", clm_model.hierarchical_models.size());
 
 	int part = -1;
 	for (size_t i = 0; i < clm_model.hierarchical_models.size(); ++i)
@@ -110,14 +125,18 @@ void FaceAnalysis::EstimateGaze(const CLMTracker::CLM& clm_model, Point3f& gaze_
 
 	if (part == -1)
 	{
-		std::cout << "Couldn't find the eye model, something wrong" << std::endl;
+		LOGE("Couldn't find the eye model, something wrong");
+		//std::cout << "Couldn't find the eye model, something wrong" << std::endl;
 	}
 
+	LOGD("eyeLdmks3d");
 	Mat eyeLdmks3d = clm_model.hierarchical_models[part].GetShape(fx, fy, cx, cy);
 
+	LOGD("GetPupilPosition");
 	Point3f pupil = GetPupilPosition(eyeLdmks3d);
 	Point3f rayDir = pupil / norm(pupil);
 
+	LOGD("faceLdmks3d");
 	Mat faceLdmks3d = clm_model.GetShape(fx, fy, cx, cy);
 	faceLdmks3d = faceLdmks3d.t();
 	Mat offset = (Mat_<double>(3, 1) << 0, -2, 0);
@@ -127,14 +146,19 @@ void FaceAnalysis::EstimateGaze(const CLMTracker::CLM& clm_model, Point3f& gaze_
 		eyeIdx = 0;
 	}
 
+	LOGD("eyeballCentreMat");
 	Mat eyeballCentreMat = (faceLdmks3d.row(36+eyeIdx*6) + faceLdmks3d.row(39+eyeIdx*6))/2.0f + (Mat(rotMat)*offset).t();
 
+	LOGD("eyeballCentre");
 	Point3f eyeballCentre = Point3f(eyeballCentreMat);
 
+	LOGD("gazeVecAxis");
 	Point3f gazeVecAxis = RaySphereIntersect(Point3f(0,0,0), rayDir, eyeballCentre, 12) - eyeballCentre;
-	
+
+	LOGD("gaze_absolute");
 	gaze_absolute = gazeVecAxis / norm(gazeVecAxis);
 
+	LOGD("gaze_head");
 	gaze_head = Point3f(rotMat * Vec3d(gaze_absolute.x, gaze_absolute.y, gaze_absolute.z));
 }
 

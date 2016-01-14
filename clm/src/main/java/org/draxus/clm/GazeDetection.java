@@ -1,74 +1,59 @@
 package org.draxus.clm;
 
-import android.content.Context;
-import android.os.Environment;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import org.opencv.core.Mat;
 
 public class GazeDetection {
     private static final String TAG = "GazeDetection";
 
-    public String runDetection(@NonNull final String path, Context context) {
+    static {
         try {
-            // Executes the command.
-            //Log.d(TAG, "Folder = " + mContext.getFilesDir().getPath());
-            Log.d(TAG, "Running FeatureExtraction");
-            File nativeFolder = context.getDir("nativeFolder", Context.MODE_PRIVATE);
-            File archFolder = new File(nativeFolder, "armeabi-v7a");
-            File fileWithinMyDir = new File(archFolder, "FeatureExtraction");
-            if (!fileWithinMyDir.exists()) {
-                return "FeatureExtraction doesn't exist";
-            }
-            if (!fileWithinMyDir.canExecute()) {
-                return "FeatureExtraction is not executable";
-            }
-
-            File videoFile = new File(archFolder, "video30fps.mp4");
-
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    fileWithinMyDir.getAbsolutePath(),
-                    "-rigid",
-                    "-q",
-                    "-verbose",
-                    "-fdir",
-                    Environment.getExternalStorageDirectory().getPath() + "/DCIM/Dominika/",
-                    "-asvid",
-                    //"-f",
-                    //Environment.getExternalStorageDirectory().getPath() + "/DCIM/video30fps.mp4",
-                    "-ogaze",
-                    Environment.getExternalStorageDirectory().getPath() + "/DCIM/features.txt");
-            Process process = processBuilder.start();
-
-            BufferedReader bufferedReader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-
-            StringBuilder log = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                log.append(line + "\n");
-            }
-
-            BufferedReader bufferedErrorReader = new BufferedReader(
-                    new InputStreamReader(process.getErrorStream()));
-
-            String errorLine;
-            while ((errorLine = bufferedErrorReader.readLine()) != null) {
-                log.append(errorLine + "\n");
-            }
-
-            // Waits for the command to finish.
-            process.waitFor();
-
-            return log.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            System.loadLibrary("SharedFeatureExtraction");
+            Log.d(TAG, "jniNativeClassInit success");
+        } catch (UnsatisfiedLinkError e) {
+            Log.e(TAG, "library not found!");
+            throw e;
         }
     }
+
+    public GazeDetection(String modelFile, String faceDetectorFile) {
+        jniNativeClassInit(modelFile, faceDetectorFile);
+    }
+
+    public String runDetection(Mat frame) {
+
+        Log.d(TAG, "Running FeatureExtraction");
+
+        Log.d(TAG, "ABI = " + stringFromJNI());
+
+        Log.d(TAG, "Frame size = " + frame.rows() + "x" + frame.cols());
+
+        Log.i(TAG, jniGazeDet(frame.getNativeObjAddr()));
+
+        return "Done";
+    }
+
+    public void init() {
+        jniInit();
+    }
+
+    public void deInit() {
+        jniDeInit();
+    }
+
+    @SuppressWarnings("JniMissingFunction")
+    private native static void jniNativeClassInit(String modelFile, String faceDetectorFile);
+
+    @SuppressWarnings("JniMissingFunction")
+    private native int jniInit();
+
+    @SuppressWarnings("JniMissingFunction")
+    private native int jniDeInit();
+
+    @SuppressWarnings("JniMissingFunction")
+    private native String jniGazeDet(long frameAddress);
+
+    @SuppressWarnings("JniMissingFunction")
+    public native String stringFromJNI();
 }

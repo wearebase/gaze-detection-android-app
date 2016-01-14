@@ -51,6 +51,15 @@
 #include <CLM.h>
 #include <CLM_utils.h>
 
+#include <android/log.h>
+
+#define LOG_TAG "CLM-JNI"
+#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 using namespace CLMTracker;
 
 //=============================================================================
@@ -216,8 +225,7 @@ void CLM::Read_CLM(string clm_location)
 
 	if(!locations.is_open())
 	{
-		cout << "Couldn't open the CLM model file aborting" << endl;
-		cout.flush();
+		LOGE("Couldn't open the CLM model file aborting");
 		return;
 	}
 
@@ -255,19 +263,17 @@ void CLM::Read_CLM(string clm_location)
 			location = location.substr(0, location.size()-1);
 		}
 
-		// append the lovstion to root location (boost syntax)
+		// append the location to root location (boost syntax)
 		location = (root / location).string();
 				
 		if (module.compare("PDM") == 0) 
-		{            
-			cout << "Reading the PDM module from: " << location << "....";
+		{
+			LOGD("Reading the PDM module from: %s ...", location.c_str());
 			pdm.Read(location);
-
-			cout << "Done" << endl;
 		}
 		else if (module.compare("Triangulations") == 0) 
 		{       
-			cout << "Reading the Triangulations module from: " << location << "....";
+			LOGD("Reading the Triangulations module from: %s ...",  location.c_str());
 			ifstream triangulationFile(location.c_str(), ios_base::in);
 
 			CLMTracker::SkipComments(triangulationFile);
@@ -283,7 +289,6 @@ void CLM::Read_CLM(string clm_location)
 				CLMTracker::SkipComments(triangulationFile);
 				CLMTracker::ReadMat(triangulationFile, triangulations[i]);
 			}
-			cout << "Done" << endl;
 		}
 		else if(module.compare("PatchesIntensity") == 0)
 		{
@@ -310,12 +315,12 @@ void CLM::Read_CLM(string clm_location)
 void CLM::Read(string main_location)
 {
 
-	cout << "Reading the CLM landmark detector/tracker from: " << main_location << endl;
+	LOGD("Reading the CLM landmark detector/tracker from: %s", main_location.c_str());
 	
 	ifstream locations(main_location.c_str(), ios_base::in);
 	if(!locations.is_open())
 	{
-		cout << "Couldn't open the model file, aborting" << endl;
+		LOGE("Couldn't open the model file, aborting");
 		return;
 	}
 	string line;
@@ -347,8 +352,8 @@ void CLM::Read(string main_location)
 		// append to root
 		location = (root / location).string();
 		if (module.compare("CLM") == 0) 
-		{ 
-			cout << "Reading the CLM module from: " << location << endl;
+		{
+			LOGD("Reading the CLM module from: %s", location.c_str());
 
 			// The CLM module includes the PDM and the patch experts
 			Read_CLM(location);
@@ -357,7 +362,7 @@ void CLM::Read(string main_location)
 		{
 			string part_name;
 			lineStream >> part_name;
-			cout << "Reading part based module...." << part_name << endl;
+			LOGD("Reading part based module.... %s", part_name.c_str());
 
 			vector<pair<int, int>> mappings;
 			while(!lineStream.eof())
@@ -472,14 +477,11 @@ void CLM::Read(string main_location)
 			}
 
 			this->hierarchical_params.push_back(params);
-
-			cout << "Done" << endl;
 		}
 		else if (module.compare("DetectionValidator") == 0)
 		{            
-			cout << "Reading the landmark validation module....";
+			LOGD("Reading the landmark validation module....");
 			landmark_validator.Read(location);
-			cout << "Done" << endl;
 		}
 	}
  
@@ -549,7 +551,7 @@ bool CLM::DetectLandmarks(const Mat_<uchar> &image, const Mat_<float> &depth, CL
 	
 	if(params.refine_hierarchical && hierarchical_models.size() > 0)
 	{
-		bool parts_used = false;		
+		bool parts_used = false;
 
 		// TODO this can be TBBified?
 		for(size_t part_model = 0; part_model < hierarchical_models.size(); ++part_model)
@@ -719,7 +721,7 @@ bool CLM::Fit(const Mat_<uchar>& im, const Mat_<float>& depthImg, const std::vec
 		// Can't track very small images reliably (less than ~30px across)
 		if(params_global[0] < 0.25)
 		{
-			cout << "Detection too small for CLM" << endl;
+			LOGD("Detection too small for CLM");
 			return false;
 		}
 	}
@@ -1085,7 +1087,7 @@ bool CLM::RemoveBackground(Mat_<float>& out_depth_image, const Mat_<float>& dept
 	// if we are too close to the edge fail
 	if(tx - 9 <= 0 || ty - 9 <= 0 || tx + 9 >= depth_image.cols || ty + 9 >= depth_image.rows)
 	{
-		cout << "Face estimate is too close to the edge, tracking failed" << endl;
+		LOGE("Face estimate is too close to the edge, tracking failed");
 		return false;
 	}
 
@@ -1158,7 +1160,7 @@ bool CLM::RemoveBackground(Mat_<float>& out_depth_image, const Mat_<float>& dept
 	}
 	else
 	{
-		cout << "No depth signal found in foreground, tracking failed" << endl;
+		LOGE("No depth signal found in foreground, tracking failed");
 		return false;
 	}
 	return true;

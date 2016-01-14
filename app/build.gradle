@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.tzutalin.dlibtest"
-        minSdkVersion 21
+        minSdkVersion 18
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
@@ -27,6 +27,7 @@ dependencies {
     compile 'com.github.dexafree:materiallist:3.0.1'
     compile project(':dlib')
     compile project(':clm')
+    compile project(':openCVLibrary310')
 }
 apply plugin: 'com.android.application'
 apply plugin: 'com.jakewharton.hugo'

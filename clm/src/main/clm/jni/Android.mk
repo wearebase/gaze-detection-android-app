@@ -50,7 +50,14 @@ ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
 LOCAL_ARM_NEON := true
 endif
 
-include $(BUILD_EXECUTABLE)
+#include $(BUILD_EXECUTABLE)
+include $(BUILD_STATIC_LIBRARY)
 #==========================FeatureExtraction===================================
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := SharedFeatureExtraction
+LOCAL_LDLIBS := -lz -lm -llog
+LOCAL_WHOLE_STATIC_LIBRARIES := FeatureExtraction
+include $(BUILD_SHARED_LIBRARY)
 
 include $(SUB_MK_FILES)
