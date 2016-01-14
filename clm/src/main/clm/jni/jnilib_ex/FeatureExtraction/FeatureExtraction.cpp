@@ -428,43 +428,48 @@ jint JNIEXPORT JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 	return JNI_VERSION_1_6;
 }
 
+CLMTracker::CLMParameters clm_parameters;
+CLMTracker::CLM *clm_model;
+
 void JNIEXPORT JNICALL
-Java_org_draxus_clm_GazeDetection_jniNativeClassInit(JNIEnv* _env, jclass _this)
+Java_org_draxus_clm_GazeDetection_jniNativeClassInit(JNIEnv* env, jclass cls,
+													 jstring model_location, jstring face_detector_location)
 {
-	jclass detRetClass = _env->FindClass("org/draxus/clm/GazeDetection");
 	LOGD("JniNativeClassIni Success");
+
+	const char *nativeModelLocation = env->GetStringUTFChars(model_location, JNI_FALSE);
+	LOGD("model location = %s", nativeModelLocation);
+
+	const char *nativeFaceDetectorLocation = env->GetStringUTFChars(face_detector_location, JNI_FALSE);
+	LOGD("face detector location = %s", nativeFaceDetectorLocation);
+
+	LOGD("Initialize CLM parameters");
+	clm_parameters.track_gaze = true;
+	clm_parameters.quiet_mode = true;
+	clm_parameters.model_location = nativeModelLocation;
+	clm_parameters.face_detector_location = nativeFaceDetectorLocation;
+	clm_parameters.curr_face_detector = CLMTracker::CLMParameters::HAAR_DETECTOR;
+
+	LOGD("Initialize CLM model");
+	clm_model = new CLMTracker::CLM(clm_parameters.model_location);
+
 }
 
 jstring JNIEXPORT JNICALL
-Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong captured_image_address, jstring modelFolder)
+Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong captured_image_address,
+											 jobject face_bounding_box)
 {
 	LOGD("Java_org_draxus_clm_GazeDetection_jniGazeDet");
-	// cx and cy aren't necessarily in the image center, so need to be able to override it (start with unit vals and init them if none specified)
-	float fx = 500, fy = 500, cx = 0, cy = 0;
-
-	const char *nativeModelFolder = env->GetStringUTFChars(modelFolder, JNI_FALSE);
-	LOGD("model folder = %s", nativeModelFolder);
-
-	LOGD("Initialize CLM parameters");
-	CLMTracker::CLMParameters clm_parameters;
-	clm_parameters.track_gaze = true;
-	clm_parameters.quiet_mode = true;
-	clm_parameters.model_location = nativeModelFolder;
-
-	LOGD("Initialize CLM model");
-	CLMTracker::CLM clm_model(clm_parameters.model_location);
 
 	Mat* captured_image = (Mat*)captured_image_address;
 
 	int rows = captured_image->rows;
 	int cols = captured_image->cols;
-	LOGD("Image size: %d x %d", rows, cols);
-
-	LOGD("Cloning image");
-	Mat_<uchar> grayscale_image = captured_image->clone();
+	//LOGD("Image size: %d x %d", rows, cols);
 
 	LOGD("Detecting landmarks");
-	bool detection_success = CLMTracker::DetectLandmarksInImage(grayscale_image, clm_model, clm_parameters);
+	bool detection_success = CLMTracker::DetectLandmarksInImage(*captured_image, *clm_model, clm_parameters);
+
 	if (detection_success) {
 		LOGD("Detection SUCCESS");
 	}
@@ -474,33 +479,28 @@ Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong cap
 	}
 
 	// Gaze tracking, absolute gaze direction
-	Point3f gazeDirection0;
-	Point3f gazeDirection1;
+	Point3f gazeDirection0, gazeDirection1;
 
 	// Gaze with respect to head rather than camera (for example if eyes are rolled up and the head is tilted or turned this will be stable)
-	Point3f gazeDirection0_head;
-	Point3f gazeDirection1_head;
+	Point3f gazeDirection0_head, gazeDirection1_head;
 
-	// If cx (optical axis centre) is undefined will use the image size/2 as an estimate
-	if(cx == 0 || cy == 0)
-	{
-		cx = cols / 2.0f;
-		cy = rows / 2.0f;
-	}
+	float fx = 500, fy = 500, cx = cols / 2.0f, cy = rows / 2.0f;
 
 	LOGD("Estimating Gaze");
-	FaceAnalysis::EstimateGaze(clm_model, gazeDirection0, gazeDirection0_head, fx, fy, cx, cy, true);
-	FaceAnalysis::EstimateGaze(clm_model, gazeDirection1, gazeDirection1_head, fx, fy, cx, cy, false);
+	FaceAnalysis::EstimateGaze(*clm_model, gazeDirection0, gazeDirection0_head, fx, fy, cx, cy, true);
+	FaceAnalysis::EstimateGaze(*clm_model, gazeDirection1, gazeDirection1_head, fx, fy, cx, cy, false);
 
 	LOGD("Returning result");
 
 	char gazeEstimation[256];
-	sprintf(gazeEstimation, "Detection SUCCESS: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f,",
+	sprintf(gazeEstimation, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
 			gazeDirection0.x, gazeDirection0.y, gazeDirection0.z,
 			gazeDirection1.x, gazeDirection1.y, gazeDirection1.z,
 			gazeDirection0_head.x, gazeDirection0_head.y, gazeDirection0_head.z,
 			gazeDirection1_head.x, gazeDirection1_head.y, gazeDirection1_head.z
 	);
+
+	FaceAnalysis::DrawGaze(*captured_image, *clm_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 
 	return env->NewStringUTF(gazeEstimation);
 

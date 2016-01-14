@@ -1,7 +1,6 @@
 package com.tzutalin.dlibtest;
 
 import android.app.Activity;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -48,7 +47,9 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
 
         //Log.d(TAG, Build.CPU_ABI);
 
-        gazeDetector = new GazeDetection(Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt");
+        gazeDetector = new GazeDetection(
+                Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt",
+                Environment.getExternalStorageDirectory() + "/Gazer/classifiers/lbpcascade_frontalface.xml");
 
         setContentView(R.layout.camera_surface_view);
 
@@ -97,6 +98,6 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
 
         gazeDetector.runDetection(currentFrame);
 
-        return inputFrame.rgba();
+        return currentFrame;
     }
 }

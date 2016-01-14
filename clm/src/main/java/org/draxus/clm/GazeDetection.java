@@ -7,19 +7,18 @@ import org.opencv.core.Mat;
 public class GazeDetection {
     private static final String TAG = "GazeDetection";
 
-    private String modelFile;
-
     static {
         try {
             System.loadLibrary("SharedFeatureExtraction");
             Log.d(TAG, "jniNativeClassInit success");
         } catch (UnsatisfiedLinkError e) {
-            Log.d(TAG, "library not found!");
+            Log.e(TAG, "library not found!");
+            throw e;
         }
     }
 
-    public GazeDetection(String modelFile) {
-        this.modelFile = modelFile;
+    public GazeDetection(String modelFile, String faceDetectorFile) {
+        jniNativeClassInit(modelFile, faceDetectorFile);
     }
 
     public String runDetection(Mat frame) {
@@ -30,7 +29,7 @@ public class GazeDetection {
 
         Log.d(TAG, "Frame size = " + frame.rows() + "x" + frame.cols());
 
-        Log.i(TAG, jniGazeDet(frame.getNativeObjAddr(), modelFile));
+        Log.i(TAG, jniGazeDet(frame.getNativeObjAddr()));
 
         return "Done";
     }
@@ -44,7 +43,7 @@ public class GazeDetection {
     }
 
     @SuppressWarnings("JniMissingFunction")
-    private native static void jniNativeClassInit();
+    private native static void jniNativeClassInit(String modelFile, String faceDetectorFile);
 
     @SuppressWarnings("JniMissingFunction")
     private native int jniInit();
@@ -53,7 +52,7 @@ public class GazeDetection {
     private native int jniDeInit();
 
     @SuppressWarnings("JniMissingFunction")
-    private native String jniGazeDet(long frameAddress, String modelFile);
+    private native String jniGazeDet(long frameAddress);
 
     @SuppressWarnings("JniMissingFunction")
     public native String stringFromJNI();
