@@ -15,6 +15,9 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 
 public class CameraActivity extends Activity implements CvCameraViewListener2 {
     private static final String TAG = CameraActivity.class.getName();
@@ -49,12 +52,14 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
 
         gazeDetector = new GazeDetection(
                 Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt",
-                Environment.getExternalStorageDirectory() + "/Gazer/classifiers/lbpcascade_frontalface.xml");
+                Environment.getExternalStorageDirectory() + "/Gazer/classifiers/lbpcascade_frontalface.xml",
+                Environment.getExternalStorageDirectory() + "/Gazer/weka/Manuel30");
 
         setContentView(R.layout.camera_surface_view);
 
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_activity_java_surface_view);
         mOpenCvCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT);
+        mOpenCvCameraView.setMaxFrameSize(800, 800); // TODO choose right size?
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
@@ -96,7 +101,10 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
 
         Mat currentFrame = inputFrame.gray();
 
-        gazeDetector.runDetection(currentFrame);
+        Point predictedPoint = gazeDetector.runDetection(currentFrame);
+
+        if (predictedPoint != null)
+            Imgproc.circle(currentFrame, predictedPoint, 10, new Scalar(0), 2);
 
         return currentFrame;
     }
