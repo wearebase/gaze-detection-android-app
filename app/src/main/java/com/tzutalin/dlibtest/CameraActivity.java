@@ -14,10 +14,13 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.Random;
 
 public class CameraActivity extends Activity implements CvCameraViewListener2 {
     private static final String TAG = CameraActivity.class.getName();
@@ -26,6 +29,13 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
 
     private GazeDetection gazeDetector;
 
+    private boolean isTrained = false;
+
+    private Point previousPoint;
+    private int previousPointRepetitions = 0;
+
+    private Random random = new Random(1);
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -33,6 +43,10 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
                     mOpenCvCameraView.enableView();
+                    gazeDetector = new GazeDetection(
+                            Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt",
+                            Environment.getExternalStorageDirectory() + "/Gazer/classifiers/lbpcascade_frontalface.xml",
+                            Environment.getExternalStorageDirectory() + "/Gazer/weka/Manuel30");
                 }
                 break;
                 default: {
@@ -49,11 +63,6 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         //Log.d(TAG, Build.CPU_ABI);
-
-        gazeDetector = new GazeDetection(
-                Environment.getExternalStorageDirectory() + "/Gazer/model/main_ccnf_general.txt",
-                Environment.getExternalStorageDirectory() + "/Gazer/classifiers/lbpcascade_frontalface.xml",
-                Environment.getExternalStorageDirectory() + "/Gazer/weka/Manuel30");
 
         setContentView(R.layout.camera_surface_view);
 
@@ -97,14 +106,51 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
     public void onCameraViewStopped() {
     }
 
+    public Mat onTraining(Mat frame) {
+
+        Imgproc.putText(frame, "TRAINING", new Point(20, 20), Core.FONT_HERSHEY_PLAIN, 1, new Scalar(0));
+
+        if (previousPoint != null) {
+            Log.d(TAG, "Training (" + previousPoint.x + "," + previousPoint.y + ")");
+            Double[] gazeFeatures = gazeDetector.runDetection(frame);
+            isTrained = gazeDetector.train(gazeFeatures, previousPoint);
+
+            // Keep same point for a while, otherwise changes too quickly
+            if (previousPointRepetitions < 15) {
+                Imgproc.circle(frame, previousPoint, 10, new Scalar(0), 2);
+                previousPointRepetitions++;
+                return frame;
+            }
+        }
+
+        previousPointRepetitions = 0;
+
+        int x = random.nextInt(frame.cols());
+        int y = random.nextInt(frame.rows());
+        previousPoint = new Point(x, y);
+        Imgproc.circle(frame, previousPoint, 10, new Scalar(0), 2);
+
+        return frame;
+    }
+
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
         Mat currentFrame = inputFrame.gray();
 
-        Point predictedPoint = gazeDetector.runDetection(currentFrame);
+        if (!isTrained) {
+            return onTraining(currentFrame);
+        }
 
-        if (predictedPoint != null)
-            Imgproc.circle(currentFrame, predictedPoint, 10, new Scalar(0), 2);
+        if (gazeDetector != null) {
+
+            Double[] gazeFeatures = gazeDetector.runDetection(currentFrame);
+            Point predictedPoint = gazeDetector.predictLocation(gazeFeatures);
+
+            if (predictedPoint != null)
+                Imgproc.circle(currentFrame, predictedPoint, 10, new Scalar(0), 2);
+        }
+
+        Imgproc.putText(currentFrame, "DETECT", new Point(20, 20), Core.FONT_HERSHEY_PLAIN, 1, new Scalar(0));
 
         return currentFrame;
     }
