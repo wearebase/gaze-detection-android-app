@@ -1,39 +1,47 @@
-## dlib-android-app + CLM-framework
+## About this repository
 
-This repo is an attempt to integrate [CLM-framework](https://github.com/TadasBaltrusaitis/CLM-framework) into [dlib-android-app](https://github.com/tzutalin/dlib-android-app).
+This repository contains a proof of concept gaze detection Android app.
 
-This version requires [CrystaX NDK](https://www.crystax.net) since depends on boost library.
+This work integrates code from the following open-source projects:
+* [OpenCV](https://github.com/Itseez/opencv) the major open-source computer vision library.
+* [Cambridge face tracker](https://github.com/TadasBaltrusaitis/CLM-framework): a Constrained Local Model (CLM) framework developed by Tadas Baltrušaitis from the University of Cambridge.
+* [dlib-android-app](https://github.com/tzutalin/dlib-android-app)
+* [dlib](http://dlib.net/): a C++ library for machine learning.
+* [Boost](https://github.com/DraXus/Boost-for-Android): a collection of C++ libraries.
+* [Weka](http://www.cs.waikato.ac.nz/ml/weka/): the main library for machine learning algorithms.
 
-###Grap the source
+### Here be dragons
 
-`$ git clone https://github.com/DraXus/dlib-android-app`
+This project is in a highly experimental state. We are not responsible for any damage that can happen to your device. Currently the app has been tested in the following devices:
+* Nexus 10
+* Samsung Galaxy Note 10.1
+
+### Download
+
+Note: Currently the APK only works for devices with ARMv7-a processor.
+
+[gaze-detection.apk](demo/gaze-detection.apk)
+
+### Install
+
+Enable installation of apps from unknown sources in the settings of your device. Then open the APK file from your device to install it.
+
+From command line: `$ adb install demo/gaze-detection.apk`
+
+### Get the sources
+
+`$ git clone https://github.com/DraXus/gaze-detection-android-app`
 
 `$ git submodule update --init --recursive`
 
-### Features
-* Support dlib HOG detector
+### Development
 
-* Facial Landmark
+The project is ready to work in Android studio 1.5.
 
-### Demo
-![](demo/demo1.png)
-![](demo/demo2.png)
+Requirements:
+* Android SDK 23 (min API level is 18)
+* Android NDK 10e
 
-### Build jniLibs
-* Command line to build
+### License
 
-You can build shared library from [dlib-android](https://github.com/tzutalin/dlib-android)
-
-Copy the shared libray to ./dlib/src/main/jniLibs/
-
-* Use IDE to build
-
-If you want to build it using Andriod studio, you need to specify your NDK path in dlib/build.gradle
-
-`commandLine "/home/darrenl/tools/android-ndk-r10e/ndk-build"`
-
-### Try directly
-`$ adb install demo/app-debug.apk`
-
-###License
-`Copyright 2015 TzuTa Lin`
+See LICENSE file.
