@@ -1,4 +1,4 @@
-package com.tzutalin.dlibtest;
+package org.draxus.gaze;
 
 import android.app.Activity;
 import android.os.Bundle;
