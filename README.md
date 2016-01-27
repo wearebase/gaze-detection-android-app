@@ -5,10 +5,10 @@ This repository contains a proof of concept gaze detection Android app.
 This work integrates code from the following open-source projects:
 * [OpenCV](https://github.com/Itseez/opencv) the major open-source computer vision library.
 * [Cambridge face tracker](https://github.com/TadasBaltrusaitis/CLM-framework): a Constrained Local Model (CLM) framework developed by Tadas Baltrušaitis from the University of Cambridge.
-* [dlib-android-app](https://github.com/tzutalin/dlib-android-app)
 * [dlib](http://dlib.net/): a C++ library for machine learning.
+* [dlib-android-app](https://github.com/tzutalin/dlib-android-app) integrates dlib library in Android.
 * [Boost](https://github.com/DraXus/Boost-for-Android): a collection of C++ libraries.
-* [Weka](http://www.cs.waikato.ac.nz/ml/weka/): the main library for machine learning algorithms.
+* [Weka](https://github.com/rjmarsan/Weka-for-Android): the main library for machine learning algorithms.
 
 ### Here be dragons
 
