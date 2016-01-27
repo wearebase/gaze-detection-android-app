@@ -20,7 +20,8 @@ android {
         jni.srcDirs = [] //disable automatic ndk-build call
     }
     task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
-        commandLine "/home/manuel/apps/android-ndk-r10e/ndk-build",
+        def ndkDir = android.ndkDirectory
+        commandLine "$ndkDir/ndk-build",
                 'NDK_PROJECT_PATH=build/intermediates/ndk',
                 'NDK_LIBS_OUT=src/main/jniLibs',
                 'APP_BUILD_SCRIPT=src/main/clm/jni/Android.mk',
@@ -44,4 +45,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile project(':openCVLibrary310')
+    compile files('../libs/wekaSTRIPPED.jar')
 }

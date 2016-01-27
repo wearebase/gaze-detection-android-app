@@ -468,7 +468,7 @@ Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong cap
 	//LOGD("Image size: %d x %d", rows, cols);
 
 	LOGD("Detecting landmarks");
-	bool detection_success = CLMTracker::DetectLandmarksInImage(*captured_image, *clm_model, clm_parameters);
+	bool detection_success = CLMTracker::DetectLandmarksInVideo(*captured_image, *clm_model, clm_parameters);
 
 	if (detection_success) {
 		LOGD("Detection SUCCESS");
@@ -493,7 +493,7 @@ Java_org_draxus_clm_GazeDetection_jniGazeDet(JNIEnv* env, jobject cls, jlong cap
 	LOGD("Returning result");
 
 	char gazeEstimation[256];
-	sprintf(gazeEstimation, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
+	sprintf(gazeEstimation, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f",
 			gazeDirection0.x, gazeDirection0.y, gazeDirection0.z,
 			gazeDirection1.x, gazeDirection1.y, gazeDirection1.z,
 			gazeDirection0_head.x, gazeDirection0_head.y, gazeDirection0_head.z,

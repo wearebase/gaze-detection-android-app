@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">dlib-android-appliciton</string>
+    <string name="app_name">gaze-detection-android-app</string>
     <string name="action_settings">Settings</string>
 </resources>

@@ -1,21 +1,23 @@
 LOCAL_PATH := $(call my-dir)
 SUB_MK_FILES := $(call all-subdir-makefiles)
 
-#include $(LOCAL_PATH)/../../../../../dlib/src/main/dlib/jni/dlib/Android.mk
+#================================= Boost =================================
+# Boost libraries have been compiled using Boost-for-Android project
+# https://github.com/DraXus/Boost-for-Android
 
 include $(CLEAR_VARS)
 LOCAL_MODULE    := boost_serialization_static
-LOCAL_SRC_FILES := /home/manuel/github/dlib-android-app/clm/src/main/clm/jni/boost/armv7a/lib/libboost_serialization-gcc-mt-1_59.a
+LOCAL_SRC_FILES := boost/armv7a/lib/libboost_serialization-gcc-mt-1_59.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE    := boost_filesystem_static
-LOCAL_SRC_FILES := /home/manuel/github/dlib-android-app/clm/src/main/clm/jni/boost/armv7a/lib/libboost_filesystem-gcc-mt-1_59.a
+LOCAL_SRC_FILES := boost/armv7a/lib/libboost_filesystem-gcc-mt-1_59.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE    := boost_system_static
-LOCAL_SRC_FILES := /home/manuel/github/dlib-android-app/clm/src/main/clm/jni/boost/armv7a/lib/libboost_system-gcc-mt-1_59.a
+LOCAL_SRC_FILES := boost/armv7a/lib/libboost_system-gcc-mt-1_59.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 
