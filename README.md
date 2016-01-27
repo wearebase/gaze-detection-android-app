@@ -20,7 +20,7 @@ This project is in a highly experimental state. We are not responsible for any d
 
 Note: Currently the APK only works for devices with ARMv7-a processor.
 
-[gaze-detection.apk](demo/gaze-detection.apk)
+[gaze-detection.apk](https://github.com/DraXus/gaze-detection-android-app/raw/master/demo/gaze-detection.apk) 8.7MB v1.0 md5sum: a5bef6fb6e54e56a1786b9f77688abce
 
 ### Install
 
