@@ -45,3 +45,9 @@ Requirements:
 ### License
 
 See LICENSE file.
+
+External libraries used in this project have their own licenses and copyrights.
+
+### Acknowledgement
+
+This work has been possible thanks to the Knowledge Transfer Partnership (KTP) between We Are Base and Bournemouth University.
