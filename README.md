@@ -20,13 +20,17 @@ This project is in a highly experimental state. We are not responsible for any d
 
 Note: Currently the APK only works for devices with ARMv7-a processor.
 
-[gaze-detection.apk](https://github.com/DraXus/gaze-detection-android-app/raw/master/demo/gaze-detection.apk) 8.4MB v1.0 md5sum: a5bef6fb6e54e56a1786b9f77688abce
+[gaze-detection.apk](https://github.com/DraXus/gaze-detection-android-app/raw/master/demo/gaze-detection.apk) 8.4MB v1.0
+md5sum: a5bef6fb6e54e56a1786b9f77688abce
 
-Additional required files: [Gazer.zip](https://github.com/DraXus/gaze-detection-android-app/raw/master/demo/Gazer.zip) 21M  a6122e017046bf927a148f8f3927a152 (extract into your /sdcard folder)
+Additional required files: [Gazer.zip](https://github.com/DraXus/gaze-detection-android-app/raw/master/demo/Gazer.zip) 21M  
+md5sum: a6122e017046bf927a148f8f3927a152
 
 ### Install
 
 Enable installation of apps from unknown sources in the settings of your device. Then open the APK file from your device to install it.
+
+Extract Gazer.zip into your /sdcard folder.
 
 From command line: `$ adb install demo/gaze-detection.apk`
 
